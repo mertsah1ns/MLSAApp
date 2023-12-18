@@ -34,7 +34,7 @@ namespace Business.Concrete
         {
             var userToCheck = _userService.GetByUserName(userForLoginDto.UserName);
 
-            if (userToCheck == null)
+            if (userToCheck.Data== null)
             {
                 return new ErrorDataResult<User>("Not Found");
             }

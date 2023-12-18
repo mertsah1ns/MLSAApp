@@ -24,8 +24,7 @@ namespace Business.DependencyResolver.Autofac
             builder.RegisterType<EfUserDal>().As<IUserDal>().SingleInstance();
             builder.RegisterType<JwtHelper>().As<ITokenHelper>().SingleInstance();
             var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            builder.RegisterAssemblyTypes(assembly).AsImplementedInterfaces().EnableInterfaceInterceptors(new ProxyGenerationOptions()
-            {
+            builder.RegisterAssemblyTypes(assembly).AsImplementedInterfaces().EnableInterfaceInterceptors(new ProxyGenerationOptions()            {
                 Selector=new AspectInterceptorSelector()
             }).SingleInstance();
             

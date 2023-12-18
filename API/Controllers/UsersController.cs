@@ -21,7 +21,6 @@ namespace API.Controllers
         }
 
         [HttpGet("getbymail")]
-        [SecuredOperations("admin,moderator")]
         public IActionResult GetByMail(string mail) {
             var result = _userService.GetByMail(mail);
             if (result.Success) {
@@ -30,7 +29,7 @@ namespace API.Controllers
             return BadRequest(result);
         }
         [HttpGet("getbyusername")]
-        [SecuredOperations("admin,moderator")]
+
         public IActionResult GetByUserName(string userName) {
             var result = _userService.GetByUserName(userName);
             if (result.Success)
@@ -40,7 +39,7 @@ namespace API.Controllers
             return BadRequest(result);
         }
         [HttpGet("getall")]
-        [SecuredOperations("admin,moderator")]
+
         public IActionResult GetAll()
         {
             var result = _userService.GetAll();
@@ -52,7 +51,7 @@ namespace API.Controllers
         }
 
         [HttpGet("getbyid")]
-        [SecuredOperations("admin,moderator")]
+
         public IActionResult GetById(int id)
         {
             var result = _userService.GetById(id);
@@ -64,7 +63,7 @@ namespace API.Controllers
         }
 
         [HttpPost("add")]
-        [SecuredOperations("admin,moderator")]
+
         public IActionResult Add(User user)
         {
             var result = _userService.Add(user);
@@ -76,7 +75,6 @@ namespace API.Controllers
         }
 
         [HttpPost("delete")]
-        [SecuredOperations("admin,moderator")]
         public IActionResult Delete(User user)
         {
             var result = _userService.Delete(user);
@@ -88,7 +86,7 @@ namespace API.Controllers
         }
 
         [HttpPost("update")]
-        [SecuredOperations("admin,moderator")]
+
         public IActionResult Update(User user)
         {
             var result = _userService.Update(user);
