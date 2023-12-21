@@ -1,85 +1,112 @@
-﻿using Business.Abstract;
+﻿using Business.Constants;
+using Core.DTOs;
 using Core.Entities.Concrete;
+using Core.Utilities.Authentication;
 using Core.Utilities.Results;
-using Core.Utilities.Security.Hashing;
-using Core.Utilities.Security.Jwt;
-using Entities.DTOs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace Business.Concrete
 {
+
     public class AuthManager : IAuthService
     {
-        ITokenHelper _tokenHelper;
-        IUserService _userService;
+        private readonly UserManager<AppUser> _userManager;
+        private readonly RoleManager<AppRole> _roleManager;
+        private readonly IConfiguration _configuration;
 
-        public AuthManager(ITokenHelper tokenHelper, IUserService userService)
+        public AuthManager(UserManager<AppUser> userManager, RoleManager<AppRole> roleManager, IConfiguration configuration)
         {
-            _tokenHelper = tokenHelper;
-            _userService = userService;
+            _userManager = userManager;
+            _roleManager = roleManager;
+            _configuration = configuration;
         }
 
-        public IDataResult<AccessToken> CreateAccessToken(User user)
+        public async Task<IResult> Login(LoginDto request)
         {
-           var claims = _userService.GetClaims(user);
-           var accessToken = _tokenHelper.CreateToken(user, claims.Data);
-           return new SuccessDataResult<AccessToken>(accessToken,"Token created"); 
-        }
-
-        public IDataResult<User> Login(UserForLoginDto userForLoginDto)
-        {
-            var userToCheck = _userService.GetByUserName(userForLoginDto.UserName);
-
-            if (userToCheck.Data== null)
+            var hasUser = await _userManager.FindByNameAsync(request.UserName);
+            var checkedUser = await _userManager.CheckPasswordAsync(hasUser, request.Password);
+            if (hasUser != null && checkedUser)
             {
-                return new ErrorDataResult<User>("Not Found");
-            }
-            if (!HashingHelper.VerifyPasswordHash(userForLoginDto.Password, userToCheck.Data.PasswordHash, userToCheck.Data.PasswordSalt))
+                var userRoles = await _userManager.GetRolesAsync(hasUser);
+
+                var authClaims = new List<Claim>
                 {
-                return new ErrorDataResult<User>("Password Error");
-            }
+                    new Claim(ClaimTypes.Name, hasUser.UserName),
+                    new Claim(ClaimTypes.NameIdentifier, hasUser.Id.ToString()),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                };
 
-            return new SuccessDataResult<User>(userToCheck.Data);
+                foreach (var userRole in userRoles)
+                {
+                    authClaims.Add(new Claim(ClaimTypes.Role, userRole));
+                }
+
+                var token = GetToken(authClaims);
+                return new SuccessDataResult<TokenDto>(new TokenDto
+                {
+                    Token = new JwtSecurityTokenHandler().WriteToken(token),
+                    Expiration = token.ValidTo
+                }, SuccessMessages.OK);
+            }
+            return new ErrorDataResult<TokenDto>(ErrorMessages.BAD_REQUEST);
         }
 
-        public IDataResult<User> Register(UserForRegisterDto userForRegisterDto, string password)
+        public async Task<IResult> Register(RegisterDto request)
         {
+            var userExists = await _userManager.FindByEmailAsync(request.Email);
+            if (userExists != null)
 
-            byte[] passwordHash, passwordSalt;
-            HashingHelper.CreatePasswordHash(password, out passwordHash, out passwordSalt);
-            var user = new User()
+                return new ErrorResult(ErrorMessages.USER_ALREADY_EXISTS);
+
+            AppUser user = new()
             {
-                Email = userForRegisterDto.Email,
-                FirstName = userForRegisterDto.FirstName,
-                LastName = userForRegisterDto.LastName,
-                UserName = userForRegisterDto.UserName,
-                PasswordHash = passwordHash,
-                PasswordSalt = passwordSalt,
-                Status = true,
+                Email = request.Email,
+                SecurityStamp = Guid.NewGuid().ToString(),
+                UserName = request.UserName,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
             };
 
-            _userService.Add(user);
-            return new SuccessDataResult<User>(user,"User Added.");
+            var result = await _userManager.CreateAsync(user, request.Password);
+
+            if (!result.Succeeded) {
+               
+            return new ErrorDataResult<string>(getMultipleErrors(result));
+            }
+            return new SuccessResult(SuccessMessages.OK);
         }
 
-        public IResult UserMailExists(string email)
+        private JwtSecurityToken GetToken(List<Claim> authClaims)
         {
-            if (_userService.GetByMail(email).Data != null) {
-                return new ErrorResult("Mail already exists");
-            }
-            return new SuccessResult();
+            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtToken:SecurityKey"]!));
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["JwtToken:Issuer"],
+                audience: _configuration["JwtToken:Audience"],
+                expires: DateTime.Now.AddMinutes(10),
+                claims: authClaims,
+                signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+                );
+
+            return token;
         }
 
-        public IResult UserNameExists(string userName) {
-            if (_userService.GetByUserName(userName).Data!=null)
+        private string getMultipleErrors(IdentityResult result)
+        {
+            string results = "";
+            foreach (var item in result.Errors)
             {
-                return new ErrorResult("Username already exists");
+                results += item.Description + "\n";
+
             }
-            return new SuccessResult();
+            return results;
         }
     }
+
 }

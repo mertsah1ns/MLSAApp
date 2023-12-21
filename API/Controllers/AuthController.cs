@@ -1,6 +1,5 @@
-﻿using Business.Abstract;
-using Entities.DTOs;
-using Microsoft.AspNetCore.Http;
+﻿using Core.DTOs;
+using Core.Utilities.Authentication;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
@@ -9,48 +8,32 @@ namespace API.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        IAuthService _authService;
+        private readonly IAuthService _authService;
 
-        public AuthController(IAuthService authService)
+        public AuthController( IAuthService authService)
         {
             _authService = authService;
         }
-
-        [HttpPost("login")]
-        public IActionResult Login(UserForLoginDto userForLoginDto)
+        [HttpPost]
+        [Route("Login")]
+        public async Task<IActionResult> Login([FromBody] LoginDto loginRequest)
         {
-            var userToLogin = _authService.Login(userForLoginDto);
-            if (!userToLogin.Success)
-            {
-                return BadRequest(userToLogin.Message);
-            }
-
-            var result = _authService.CreateAccessToken(userToLogin.Data);
+            var result = await _authService.Login(loginRequest);
             if (result.Success)
             {
-                return Ok(result.Data);
+                return Ok(result);
             }
             return BadRequest(result.Message);
         }
-        [HttpPost("register")]
-        public IActionResult Register(UserForRegisterDto userForRegisterDto)
-        {
-            var userMailExists = _authService.UserMailExists(userForRegisterDto.Email);
-            var userNameExists = _authService.UserNameExists(userForRegisterDto.UserName);
-            if (!userMailExists.Success)
-            {
-                return BadRequest(userMailExists.Message);
-            }
-            if (!userNameExists.Success)
-            {
-                return BadRequest(userNameExists.Message);
-            }
 
-            var registerResult = _authService.Register(userForRegisterDto, userForRegisterDto.Password);
-            var result = _authService.CreateAccessToken(registerResult.Data);
+        [HttpPost]
+        [Route("Register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDto registerRequest)
+        {
+            var result = await _authService.Register(registerRequest);
             if (result.Success)
             {
-                return Ok(result.Data);
+                return Ok(result);
             }
             return BadRequest(result.Message);
         }
