@@ -8,9 +8,9 @@ namespace DataAccess.Concrete.EntityFramework
 
     { 
         private readonly string ConnectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=mlsaappdemoforidentity;Integrated Security=True";
-
-        public MLSAContext(DbContextOptions options) : base(options)
+        public MLSAContext()
         {
+            
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -18,6 +18,7 @@ namespace DataAccess.Concrete.EntityFramework
             optionsBuilder.UseSqlServer($"{ConnectionString}");
         }
         public DbSet<AppUser> AppUsers { get; set; }
+        public DbSet<AppRole> AppRoles { get; set; }
         
     }
 }

@@ -19,6 +19,12 @@ namespace Business.ValidationRules.FluentValidation
             RuleFor(rto => rto.LastName).NotEmpty();
             RuleFor(rto => rto.Email).EmailAddress();
             RuleFor(rto=>rto.Password).MinimumLength(6);
+            RuleFor(rto=>rto.UserName).Must(StartWithA).WithMessage("A ile başlamamalı.");
+        }
+
+        private bool StartWithA(string arg)
+        {
+            return arg.StartsWith("A");
         }
 
     }

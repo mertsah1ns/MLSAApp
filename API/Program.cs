@@ -1,6 +1,7 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Business.Concrete;
+using Business.Constants;
 using Business.DependencyResolver.Autofac;
 using Core.DependencyResolvers;
 using Core.Entities.Concrete;
@@ -31,7 +32,7 @@ builder.Services.AddScoped<IAuthService, AuthManager>();
 builder.Services.AddDbContext<MLSAContext>();
 builder.Services.AddIdentity<AppUser, AppRole>().
     AddEntityFrameworkStores<MLSAContext>().
-    AddDefaultTokenProviders();
+    AddDefaultTokenProviders().AddErrorDescriber<CustomErrorValidator>();
 
 
 builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());

@@ -1,4 +1,6 @@
 ﻿using Business.Constants;
+using Business.ValidationRules.FluentValidation;
+using Core.Aspects.Autofac.Validation;
 using Core.DTOs;
 using Core.Entities.Concrete;
 using Core.Utilities.Authentication;
@@ -6,9 +8,11 @@ using Core.Utilities.Results;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using System.Collections;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 
 namespace Business.Concrete
 {
@@ -18,7 +22,6 @@ namespace Business.Concrete
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<AppRole> _roleManager;
         private readonly IConfiguration _configuration;
-
         public AuthManager(UserManager<AppUser> userManager, RoleManager<AppRole> roleManager, IConfiguration configuration)
         {
             _userManager = userManager;
@@ -33,7 +36,7 @@ namespace Business.Concrete
 
             if (request.UserName == String.Empty || request.Password == String.Empty)
             {
-                return new ErrorResult(LoginErrorMessages.EMPTY_NICK_OR_PASSWORD);
+                return new ErrorResult(new CustomErrorValidator().InvalidUserNameOrPasswordMismatch().Description);
             }
             if (hasUser != null && checkedUser)
             {
@@ -56,20 +59,20 @@ namespace Business.Concrete
                     (new TokenDto
                 {
                     Token = new JwtSecurityTokenHandler().WriteToken(token),
-                }, SuccessMessages.OK);
+                }, "OK");
             }
 
          
 
-            return new ErrorDataResult<TokenDto>(LoginErrorMessages.WRONG_NICK_OR_PASSWORD);
+            return new ErrorDataResult<TokenDto>( new CustomErrorValidator().AuthorizationError().Description);
         }
-
+        //[ValidationAspect(typeof(AuthValidator))]
         public async Task<IResult> Register(RegisterDto request)
         {
             var userExists = await _userManager.FindByEmailAsync(request.Email);
             if (userExists != null)
 
-                return new ErrorResult(ErrorMessages.USER_ALREADY_EXISTS);
+                return new ErrorResult(new CustomErrorValidator().DuplicateEmail(userExists.Email).Description);
 
             AppUser user = new()
             {
@@ -84,9 +87,9 @@ namespace Business.Concrete
 
             if (!result.Succeeded) {
                
-            return new ErrorDataResult<string>();
+            return new ErrorDataResult<List<string>>(JsonSerializer.Serialize(getMultipleErrors(result)));
             }
-            return new SuccessResult(SuccessMessages.OK);
+            return new SuccessResult("OK");
         }
 
         private JwtSecurityToken GetToken(List<Claim> authClaims)
@@ -103,13 +106,13 @@ namespace Business.Concrete
 
             return token;
         }
-
-        private string getMultipleErrors(IdentityResult result)
+        
+        private List<string> getMultipleErrors(IdentityResult result)
         {
-            string results = "";
+            List<string> results = new List<string>();
             foreach (var item in result.Errors)
             {
-                results += item.Description + "\n";
+                results.Add(item.Description);
 
             }
             return results;
