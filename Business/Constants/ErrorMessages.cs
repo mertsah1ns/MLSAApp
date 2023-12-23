@@ -8,9 +8,10 @@ namespace Business.Constants
 {
     public class ErrorMessages
     {
-        public static string NO_CONTENT => "No Content";
-        public static string BAD_REQUEST => "Bad Request";
-        public static string UNAUTHORIZED => "Unauthorized";
-        public static string USER_ALREADY_EXISTS => "User Already Exists";
+        public static string NO_CONTENT => "İçerik Bulunmadı.";
+        public static string BAD_REQUEST => "Hatalı İstek.";
+
+        public static string UNAUTHORIZED => "Yetkisiz İşlem.";
+        public static string USER_ALREADY_EXISTS => "Kullanıcı adı zaten mevcut.";
     }
 }

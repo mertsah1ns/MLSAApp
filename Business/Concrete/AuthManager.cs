@@ -9,7 +9,6 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Text.Json;
 
 namespace Business.Concrete
 {
@@ -31,6 +30,11 @@ namespace Business.Concrete
         {
             var hasUser = await _userManager.FindByNameAsync(request.UserName);
             var checkedUser = await _userManager.CheckPasswordAsync(hasUser, request.Password);
+
+            if (request.UserName == String.Empty || request.Password == String.Empty)
+            {
+                return new ErrorResult(LoginErrorMessages.EMPTY_NICK_OR_PASSWORD);
+            }
             if (hasUser != null && checkedUser)
             {
                 var userRoles = await _userManager.GetRolesAsync(hasUser);
@@ -48,13 +52,16 @@ namespace Business.Concrete
                 }
 
                 var token = GetToken(authClaims);
-                return new SuccessDataResult<TokenDto>(new TokenDto
+                return new SuccessDataResult<TokenDto>
+                    (new TokenDto
                 {
                     Token = new JwtSecurityTokenHandler().WriteToken(token),
-                    Expiration = token.ValidTo
                 }, SuccessMessages.OK);
             }
-            return new ErrorDataResult<TokenDto>(ErrorMessages.BAD_REQUEST);
+
+         
+
+            return new ErrorDataResult<TokenDto>(LoginErrorMessages.WRONG_NICK_OR_PASSWORD);
         }
 
         public async Task<IResult> Register(RegisterDto request)
@@ -77,7 +84,7 @@ namespace Business.Concrete
 
             if (!result.Succeeded) {
                
-            return new ErrorDataResult<string>(getMultipleErrors(result));
+            return new ErrorDataResult<string>();
             }
             return new SuccessResult(SuccessMessages.OK);
         }
@@ -89,7 +96,7 @@ namespace Business.Concrete
             var token = new JwtSecurityToken(
                 issuer: _configuration["JwtToken:Issuer"],
                 audience: _configuration["JwtToken:Audience"],
-                expires: DateTime.Now.AddMinutes(10),
+                expires: DateTime.Now.AddMinutes(_configuration.GetValue<int>("Expiration")),
                 claims: authClaims,
                 signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
                 );

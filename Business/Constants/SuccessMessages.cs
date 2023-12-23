@@ -8,6 +8,6 @@ namespace Business.Constants
 {
     public class SuccessMessages
     {
-        public static string OK { get; internal set; }         = "OK";
+        public static string OK => "Created";
     }
 }
