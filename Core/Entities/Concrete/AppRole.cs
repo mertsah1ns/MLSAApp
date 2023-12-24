@@ -9,6 +9,5 @@ namespace Core.Entities.Concrete
 {
     public class AppRole:IdentityRole<int>
     {
-        public bool isTeamMember { get; set; }
     }
 }

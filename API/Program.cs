@@ -11,9 +11,11 @@ using Core.Utilities.IoC;
 using DataAccess.Concrete.EntityFramework;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System;
+using System.Reflection;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,8 +30,19 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDependencyResolvers(new ICoreModule[] {
                new CoreModule()
             });
-builder.Services.AddScoped<IAuthService, AuthManager>();
-builder.Services.AddDbContext<MLSAContext>();
+
+
+
+//builder.Services.AddDbContext<MLSAContext>(options =>
+//{
+//    options.UseSqlServer(builder.Configuration.GetConnectionString("SqlConLocal"), x =>
+//    {
+//        x.MigrationsAssembly(Assembly.GetAssembly(typeof(MLSAContext))!.GetName().Name);
+//    });
+//});
+
+
+
 builder.Services.AddIdentity<AppUser, AppRole>().
     AddEntityFrameworkStores<MLSAContext>().
     AddDefaultTokenProviders().AddErrorDescriber<CustomErrorValidator>();
@@ -58,7 +71,7 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidAudience = builder.Configuration["JwtToken:Audience"],
         ValidIssuer = builder.Configuration["JwtToken:Issuer"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtToken:SecurityKey"]!))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtToken:SecurityKey"]))
     };
 });
 

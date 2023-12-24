@@ -80,14 +80,14 @@ namespace Business.Concrete
                 SecurityStamp = Guid.NewGuid().ToString(),
                 UserName = request.UserName,
                 FirstName = request.FirstName,
-                LastName = request.LastName,
+                LastName = request.LastName
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);
 
             if (!result.Succeeded) {
                
-            return new ErrorDataResult<List<string>>(JsonSerializer.Serialize(getMultipleErrors(result)));
+            return new ErrorDataResult<string>(getMultipleErrors(result));
             }
             return new SuccessResult("OK");
         }
@@ -107,12 +107,12 @@ namespace Business.Concrete
             return token;
         }
         
-        private List<string> getMultipleErrors(IdentityResult result)
+        private string getMultipleErrors(IdentityResult result)
         {
-            List<string> results = new List<string>();
+            string results = "";
             foreach (var item in result.Errors)
             {
-                results.Add(item.Description);
+                results += (item.Description) +"\n";
 
             }
             return results;
