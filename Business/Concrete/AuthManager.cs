@@ -83,6 +83,12 @@ namespace Business.Concrete
                 LastName = request.LastName,
             };
 
+            if (request.IsTeamMember)
+            {
+                var role = new AppRole { Name = "TeamMember", IsTeamMember = true };
+                await _roleManager.CreateAsync(role);
+                await _userManager.AddToRoleAsync(user, "TeamMember");
+            }
             var result = await _userManager.CreateAsync(user, request.Password);
 
             if (!result.Succeeded) {
